@@ -2,12 +2,13 @@ from flask import Flask, render_template, request
 from flask.json import jsonify
 import pickle
 from os import path
-from create_pickle import transform_json_to_pickle
+from create_pickle import save_data
+import uuid
 
 app = Flask(__name__)
 
 # transform project list from json to pickle
-transform_json_to_pickle()
+# transform_json_to_pickle()
 
 # load project list from pickle
 current_path = path.dirname(__file__)
@@ -55,11 +56,25 @@ def create_project():
   request_data = request.get_json()
   new_project = {
       'name': request_data['name'],
-      'project_id': request_data['project_id'],
+      "creation_date": request_data['creation_date'],
+      "project_id": "",
+      "completed": request_data['completed'],
       'tasks': request_data['tasks']
   }
+
+  # id creation
+  new_project_id = uuid.uuid4().hex[:24]
+  new_project_name = new_project['name']
+  new_project['project_id'] = new_project_id
+
+  # add project to list and save list in pickle file
   projects.append(new_project)
-  return jsonify(new_project)
+
+  save_data(projects)
+  return jsonify({
+      'message':
+      f'project {new_project_name} created with id: {new_project_id}'
+  })
 
 
 # add task to a project
@@ -70,7 +85,9 @@ def add_task_to_project(name):
     if project['name'] == name:
       new_task = {
           'name': request_data['name'],
-          'completed': request_data['completed']
+          'task_id': request_data['task_id'],
+          'completed': request_data['completed'],
+          'checklist': request_data['check list']
       }
       project['tasks'].append(new_task)
       return jsonify(new_task)
