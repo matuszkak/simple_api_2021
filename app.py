@@ -1,28 +1,36 @@
 from flask import Flask, render_template, request
 from flask.json import jsonify
+import pickle
+from os import path
+from create_pickle import transform_json_to_pickle
 
 app = Flask(__name__)
 
-projects = [{
-    'name': 'my project',
-    'tasks': [{
-        'name': 'my task',
-        'completed': False
-    }]
-}]
+# transform project list from json to pickle
+transform_json_to_pickle()
+
+# load project list from pickle
+current_path = path.dirname(__file__)
+
+with open(path.join(current_path, 'projects.pickle'), 'rb') as file:
+  projects = pickle.load(file)
 
 
+# define resources
+# home page from template
 @app.route('/')
 def home():
   name = "Kristof"
   return render_template('index.html', user_name=name)
 
 
+# get list of projects
 @app.route('/project')
 def get_projects():
   return jsonify({'projects': projects})
 
 
+# get project details by project name
 @app.route('/project/<string:name>')
 def get_project(name):
   for project in projects:
@@ -31,6 +39,7 @@ def get_project(name):
   return jsonify({'message': 'project not found'})
 
 
+# get project tasks by project name
 @app.route('/project/<string:name>/task')
 def get_all_tasks_in_project(name):
   for project in projects:
@@ -39,6 +48,7 @@ def get_all_tasks_in_project(name):
   return jsonify({'message': 'project not found'})
 
 
+# create project
 @app.route('/project', methods=['POST'])
 def create_project():
   # lekérdezzük a http request body-ból a JSON adatot:
@@ -48,6 +58,7 @@ def create_project():
   return jsonify(new_project)
 
 
+# add task to a project
 @app.route('/project/<string:name>/task', methods=['POST'])
 def add_task_to_project(name):
   request_data = request.get_json()
@@ -62,5 +73,6 @@ def add_task_to_project(name):
   return jsonify({'message': 'project not found'})
 
 
+# run app on all ports
 if __name__ == '__main__':
   app.run(host='0.0.0.0', port=5000, debug=True)
