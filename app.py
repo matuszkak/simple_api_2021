@@ -1,4 +1,3 @@
-from os import name
 from flask import Flask, render_template, request
 from flask.json import jsonify
 
@@ -8,7 +7,7 @@ projects = [{
     'name': 'my project',
     'tasks': [{
         'name': 'my task',
-        'completed': 'False'
+        'completed': False
     }]
 }]
 
@@ -29,7 +28,7 @@ def get_project(name):
   for project in projects:
     if project['name'] == name:
       return jsonify(project)
-    return jsonify({'message': 'project not found'})
+  return jsonify({'message': 'project not found'})
 
 
 @app.route('/project/<string:name>/task')
@@ -37,12 +36,12 @@ def get_all_tasks_in_project(name):
   for project in projects:
     if project['name'] == name:
       return jsonify({'tasks': project['tasks']})
-    return jsonify({'message': 'project not found'})
+  return jsonify({'message': 'project not found'})
 
 
 @app.route('/project', methods=['POST'])
 def create_project():
-  #lekérdezzük a http request body-ból a JSON adatot
+  # lekérdezzük a http request body-ból a JSON adatot:
   request_data = request.get_json()
   new_project = {'name': request_data['name'], 'tasks': request_data['tasks']}
   projects.append(new_project)
@@ -60,7 +59,7 @@ def add_task_to_project(name):
       }
       project['tasks'].append(new_task)
       return jsonify(new_task)
-    return jsonify({'message': 'project not found'})
+  return jsonify({'message': 'project not found'})
 
 
 if __name__ == '__main__':
