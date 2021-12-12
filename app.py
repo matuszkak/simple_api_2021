@@ -30,13 +30,13 @@ def get_projects():
   return jsonify({'projects': projects})
 
 
-# get project details by project name
-@app.route('/project/<string:name>')
-def get_project(name):
+# get project details by project_id
+@app.route('/project/<string:project_id>')
+def get_project(project_id):
   for project in projects:
-    if project['name'] == name:
+    if project['project_id'] == project_id:
       return jsonify(project)
-  return jsonify({'message': 'project not found'})
+  return jsonify({'message': 'project such id does not exists'})
 
 
 # get project tasks by project name
@@ -53,7 +53,11 @@ def get_all_tasks_in_project(name):
 def create_project():
   # lekérdezzük a http request body-ból a JSON adatot:
   request_data = request.get_json()
-  new_project = {'name': request_data['name'], 'tasks': request_data['tasks']}
+  new_project = {
+      'name': request_data['name'],
+      'project_id': request_data['project_id'],
+      'tasks': request_data['tasks']
+  }
   projects.append(new_project)
   return jsonify(new_project)
 
