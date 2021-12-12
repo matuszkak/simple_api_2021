@@ -78,19 +78,29 @@ def create_project():
 
 
 # add task to a project
-@app.route('/project/<string:name>/task', methods=['POST'])
-def add_task_to_project(name):
+@app.route('/project/<string:project_id>/task', methods=['POST'])
+def add_task_to_project(project_id):
   request_data = request.get_json()
   for project in projects:
-    if project['name'] == name:
+    if project['project_id'] == project_id:
       new_task = {
           'name': request_data['name'],
-          'task_id': request_data['task_id'],
+          "task_id": "",
           'completed': request_data['completed'],
-          'checklist': request_data['check list']
+          'checklist': request_data['checklist']
       }
+
+      # id creation
+      new_task_id = uuid.uuid4().hex[:24]
+      new_task['task_id'] = new_task_id
+
+      # add task to task list
       project['tasks'].append(new_task)
-      return jsonify(new_task)
+
+      # save project list in pickle file
+      save_data(projects)
+      return jsonify({'message': f'task created with id: {new_task_id}'})
+
   return jsonify({'message': 'project not found'})
 
 
