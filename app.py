@@ -5,19 +5,37 @@ from os import path
 from create_pickle import save_data
 import uuid
 
+
+# function to filter dictionary based on list of fields
+def filter_list_of_dicts(list_of_dicts, fields):
+  filtered_dicts = []
+  for x in list_of_dicts:
+
+    x_copy = x.copy()
+
+    for elem in x:
+      if elem not in fields:
+        dict(filter(lambda x: x[0] != elem, x_copy.items()))
+        x_copy.pop(elem)
+
+    filtered_dicts.append(x_copy)
+
+  return filtered_dicts
+
+
 app = Flask(__name__)
 
-# transform project list from json to pickle
+# transform project list from json to pickle - needed only at initializetion when no project.pickle file. Or can run create.pickle.py separately to create first project.pickle file from the project.json input file
 # transform_json_to_pickle()
 
 # load project list from pickle
 current_path = path.dirname(__file__)
-
 with open(path.join(current_path, 'projects.pickle'), 'rb') as file:
   projects = pickle.load(file)
 
+# define resources...
 
-# define resources
+
 # home page from template
 @app.route('/')
 def home():
@@ -25,10 +43,17 @@ def home():
   return render_template('index.html', user_name=name)
 
 
-# get list of projects
+# get list of projects, with specific fields
 @app.route('/project')
 def get_projects():
-  return jsonify({'projects': projects})
+  try:
+    request_data = request.get_json()
+    fields = request_data['fields']
+    # print(fields)
+    # print(projects)
+    return jsonify({'projects': filter_list_of_dicts(projects, fields)})
+  except:
+    return jsonify({'projects': projects})
 
 
 # get project details by project_id
@@ -40,12 +65,24 @@ def get_project(project_id):
   return jsonify({'message': 'project such id does not exists'})
 
 
-# get project tasks by project name
-@app.route('/project/<string:name>/task')
-def get_all_tasks_in_project(name):
+# get project tasks, with specific fields
+@app.route('/project/<string:project_id>/task')
+def get_all_tasks_in_project(project_id):
+
   for project in projects:
-    if project['name'] == name:
-      return jsonify({'tasks': project['tasks']})
+    if project['project_id'] == project_id:
+
+      try:
+        request_data = request.get_json()
+        tfields = request_data['fields']
+        tasks = {}
+        # print(tfields)
+        tasks = project['tasks']
+        # print(tasks)
+        return jsonify({'tasks': filter_list_of_dicts(tasks, tfields)})
+
+      except:
+        return jsonify({'tasks': project['tasks']})
   return jsonify({'message': 'project not found'})
 
 
@@ -62,7 +99,7 @@ def create_project():
       'tasks': request_data['tasks']
   }
 
-  # id creation
+  # id creation for project
   new_project_id = uuid.uuid4().hex[:24]
   new_project_name = new_project['name']
   new_project['project_id'] = new_project_id
@@ -77,7 +114,7 @@ def create_project():
   })
 
 
-# add task to a project
+# add task to project
 @app.route('/project/<string:project_id>/task', methods=['POST'])
 def add_task_to_project(project_id):
   request_data = request.get_json()
@@ -90,21 +127,21 @@ def add_task_to_project(project_id):
           'checklist': request_data['checklist']
       }
 
-      # id creation
+      # task id creation
       new_task_id = uuid.uuid4().hex[:24]
       new_task['task_id'] = new_task_id
 
       # add task to task list
       project['tasks'].append(new_task)
 
-      # save project list in pickle file
+      # save project data in pickle file
       save_data(projects)
       return jsonify({'message': f'task created with id: {new_task_id}'})
 
   return jsonify({'message': 'project not found'})
 
 
-# flag project as complete
+# set project complete
 @app.route('/project/<string:project_id>/complete', methods=['POST'])
 def set_project_to_complete(project_id):
   for project in projects:
